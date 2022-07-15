@@ -123,8 +123,9 @@ class DCLModel(BaseModel):
             self.compute_G_loss().backward()  # calculate graidents for G
             self.backward_D_A()  # calculate gradients for D_A
             self.backward_D_B()  # calculate graidents for D_B
-            self.optimizer_F = torch.optim.Adam(itertools.chain(self.netF1.parameters(), self.netF2.parameters()))
-            self.optimizers.append(self.optimizer_F)
+            if self.opt.lambda_NCE > 0:
+                self.optimizer_F = torch.optim.Adam(itertools.chain(self.netF1.parameters(), self.netF2.parameters()))
+                self.optimizers.append(self.optimizer_F)
 
     def optimize_parameters(self):
         # forward
@@ -140,12 +141,12 @@ class DCLModel(BaseModel):
         # update G
         self.set_requires_grad([self.netD_A, self.netD_B], False)
         self.optimizer_G.zero_grad()
-        if self.opt.netF == 'mlp_sample':
+        if self.opt.lambda_NCE > 0 and self.opt.netF == 'mlp_sample':
             self.optimizer_F.zero_grad()
         self.loss_G = self.compute_G_loss()
         self.loss_G.backward()
         self.optimizer_G.step()
-        if self.opt.netF == 'mlp_sample':
+        if self.opt.lambda_NCE > 0 and self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
 
     def set_input(self, input):

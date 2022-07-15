@@ -22,8 +22,10 @@ if __name__ == '__main__':
     opts = TrainOptions().parse()   # get training options
 
     if len(opts.gpu_ids) > 0:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(opts.gpu_ids[0])
         device = torch.device("cuda")
     else:
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         device = torch.device("cpu")
 
     if not os.path.exists(opts.log_dir):
@@ -87,7 +89,7 @@ if __name__ == '__main__':
                         val_patch_t = torch.tensor(val_data_t[i:i + 1, j:j + opts.input_nc, :, :], device=device)
 
                         ret_st = model.netG_A(val_patch_s)
-                        ret_ts = model.netG_A(val_patch_t)
+                        ret_ts = model.netG_B(val_patch_t)
 
                         val_st[j:j + opts.input_nc, :, :] += ret_st.cpu().detach().numpy()[0]
                         val_ts[j:j + opts.input_nc, :, :] += ret_ts.cpu().detach().numpy()[0]

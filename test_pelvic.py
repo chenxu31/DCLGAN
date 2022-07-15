@@ -51,7 +51,7 @@ if __name__ == '__main__':
     opt.batch_size = 1    # test code only supports batch_size = 1s
 
     if len(opt.gpu_ids) > 0:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(opt.gpu)
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(opt.gpu_ids[0])
         device = torch.device("cuda")
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

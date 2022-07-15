@@ -47,6 +47,7 @@ class TrainOptions(BaseOptions):
         parser.add_argument('--psnr_threshold', type=float, default=18.0, help="only save the checkpoint file when PSNR reach this threshold")
         parser.add_argument('--max_iter', type=int, default=100000, help='number of iterations')
         parser.add_argument('--mini', type=int, default=0, help='number of iterations')
+        parser.add_argument('--pretrained_dir', type=str, default="", help='pretrained_dir')
 
         self.isTrain = True
         return parser
