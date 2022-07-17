@@ -39,6 +39,7 @@ import sys
 import numpy
 import pdb
 import skimage.io
+from skimage.metrics import structural_similarity as SSIM
 
 sys.path.append(os.path.join("..", "util"))
 import common_metrics
@@ -67,6 +68,8 @@ if __name__ == '__main__':
 
     test_st_psnr = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
     test_ts_psnr = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
+    test_st_ssim = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
+    test_ts_ssim = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
     test_st_list = []
     test_ts_list = []
     with torch.no_grad():
@@ -106,14 +109,19 @@ if __name__ == '__main__':
 
             st_psnr = common_metrics.psnr(test_st, test_data_t[i])
             ts_psnr = common_metrics.psnr(test_ts, test_data_s[i])
+            st_ssim = SSIM(test_st, test_data_t[i])
+            ts_ssim = SSIM(test_ts, test_data_s[i])
 
             test_st_psnr[i] = st_psnr
             test_ts_psnr[i] = ts_psnr
+            test_st_ssim[i] = st_ssim
+            test_ts_ssim[i] = ts_ssim
             test_st_list.append(test_st)
             test_ts_list.append(test_ts)
 
-    msg = "  test_st_psnr:%f/%f  test_ts_psnr:%f/%f" % \
-          (test_st_psnr.mean(), test_st_psnr.std(), test_ts_psnr.mean(), test_ts_psnr.std())
+    msg = "test_st_psnr:%f/%f  test_ts_psnr:%f/%f  test_st_ssim:%f/%f  test_ts_ssim:%f/%f" % \
+          (test_st_psnr.mean(), test_st_psnr.std(), test_ts_psnr.mean(), test_ts_psnr.std(),
+           test_st_ssim.mean(), test_st_ssim.std(), test_ts_ssim.mean(), test_ts_ssim.std())
     print(msg)
 
     if opt.results_dir:
@@ -122,3 +130,5 @@ if __name__ == '__main__':
 
         numpy.save(os.path.join(opt.results_dir, "st_psnr.npy"), test_st_psnr)
         numpy.save(os.path.join(opt.results_dir, "ts_psnr.npy"), test_ts_psnr)
+        numpy.save(os.path.join(opt.results_dir, "st_ssim.npy"), test_st_ssim)
+        numpy.save(os.path.join(opt.results_dir, "ts_ssim.npy"), test_ts_ssim)
