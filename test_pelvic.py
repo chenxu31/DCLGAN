@@ -62,24 +62,24 @@ if __name__ == '__main__':
         os.makedirs(opt.results_dir)
 
     test_ids_t = common_pelvic.load_data_ids(opt.dataroot, "testing", "treat")
-    test_data_s, test_data_t, _, _ = common_pelvic.load_test_data(opt.dataroot)
+    test_data_s, test_data_t, _, _ = common_pelvic.load_test_data(opt.dataroot, valid=True)
 
     model = create_model(opt)
 
-    test_st_psnr = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
-    test_ts_psnr = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
-    test_st_ssim = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
-    test_ts_ssim = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
+    test_st_psnr = numpy.zeros((len(test_data_s), 1), numpy.float32)
+    test_ts_psnr = numpy.zeros((len(test_data_t), 1), numpy.float32)
+    test_st_ssim = numpy.zeros((len(test_data_s), 1), numpy.float32)
+    test_ts_ssim = numpy.zeros((len(test_data_t), 1), numpy.float32)
     test_st_list = []
     test_ts_list = []
     with torch.no_grad():
-        for i in range(test_data_s.shape[0]):
-            test_st = numpy.zeros(test_data_s.shape[1:], numpy.float32)
-            test_ts = numpy.zeros(test_data_t.shape[1:], numpy.float32)
-            used = numpy.zeros(test_data_s.shape[1:], numpy.float32)
-            for j in range(test_data_s.shape[1] - opt.input_nc + 1):
-                test_patch_s = torch.tensor(test_data_s[i:i + 1, j:j + opt.input_nc, :, :], device=device)
-                test_patch_t = torch.tensor(test_data_t[i:i + 1, j:j + opt.input_nc, :, :], device=device)
+        for i in range(len(test_data_s)):
+            test_st = numpy.zeros(test_data_s[i].shape, numpy.float32)
+            test_ts = numpy.zeros(test_data_t[i].shape, numpy.float32)
+            used = numpy.zeros(test_data_s[i].shape, numpy.float32)
+            for j in range(test_data_s[i].shape[0] - opt.input_nc + 1):
+                test_patch_s = torch.tensor(numpy.expand_dims(test_data_s[i][j:j + opt.input_nc, :, :], 0), device=device)
+                test_patch_t = torch.tensor(numpy.expand_dims(test_data_t[i][j:j + opt.input_nc, :, :], 0), device=device)
 
                 if i == 0 and j == 0:
                     data = {
