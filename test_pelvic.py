@@ -41,7 +41,7 @@ import pdb
 import skimage.io
 from skimage.metrics import structural_similarity as SSIM
 
-sys.path.append(os.path.join("..", "util"))
+sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
 import common_metrics
 import common_pelvic_pt as common_pelvic
 
@@ -104,8 +104,10 @@ if __name__ == '__main__':
             test_st /= used
             test_ts /= used
 
+            """
             if opt.results_dir:
                 common_pelvic.save_nii(test_ts, os.path.join(opt.results_dir, "syn_%s.nii.gz" % test_ids_t[i]))
+            """
 
             st_psnr = common_metrics.psnr(test_st, test_data_t[i])
             ts_psnr = common_metrics.psnr(test_ts, test_data_s[i])
