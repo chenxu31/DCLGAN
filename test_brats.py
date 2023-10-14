@@ -40,8 +40,12 @@ import numpy
 import pdb
 import skimage.io
 from skimage.metrics import structural_similarity as SSIM
+import platform
 
-sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
+if platform.system() == 'Windows':
+  sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
+else:
+  sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
 import common_metrics
 import common_brats
 
@@ -110,10 +114,10 @@ if __name__ == '__main__':
 
             st_psnr = common_metrics.psnr(test_st, test_data_t[i])
             ts_psnr = common_metrics.psnr(test_ts, test_data_s[i])
-            st_ssim = SSIM(test_st, test_data_t[i])
-            ts_ssim = SSIM(test_ts, test_data_s[i])
-            st_mae = abs(test_st - test_data_t[i])
-            ts_mae = abs(test_ts - test_data_s[i])
+            st_ssim = SSIM(test_st, test_data_t[i], range=2.)
+            ts_ssim = SSIM(test_ts, test_data_s[i], range=2.)
+            st_mae = abs(test_st - test_data_t[i]).mean()
+            ts_mae = abs(test_ts - test_data_s[i]).mean()
 
             test_st_psnr[i] = st_psnr
             test_ts_psnr[i] = ts_psnr
