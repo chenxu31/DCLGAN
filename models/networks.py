@@ -1034,7 +1034,7 @@ class ResnetGenerator(nn.Module):
         else:
             """Standard forward"""
             fake = self.model(input)
-            fake = torch.clamp(fake, 1., -1.)
+            fake = torch.clamp(fake, -1., 1.)
             return fake
 
 
