@@ -1008,7 +1008,6 @@ class ResnetGenerator(nn.Module):
                           nn.ReLU(True)]
         model += [nn.ReflectionPad2d(3)]
         model += [nn.Conv2d(ngf, output_nc, kernel_size=7, padding=0)]
-        model += [nn.Tanh()]
 
         self.model = nn.Sequential(*model)
 
@@ -1035,6 +1034,7 @@ class ResnetGenerator(nn.Module):
         else:
             """Standard forward"""
             fake = self.model(input)
+            fake = torch.clamp(fake, 1., -1.)
             return fake
 
 
