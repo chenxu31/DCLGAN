@@ -60,7 +60,7 @@ if __name__ == '__main__':
                 "B": patch_t,
                 "A_paths": "",
             }
-            if it == 0:
+            if it == 0 and batch_id == 0:
                 model.data_dependent_initialize(data)
                 model.setup(opts)  # regular setup: load and print networks; create schedulers
                 model.parallelize()
