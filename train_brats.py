@@ -34,8 +34,8 @@ if __name__ == '__main__':
     if not os.path.exists(opts.log_dir):
         os.makedirs(opts.log_dir)
 
-    dataset_s = common_brats.Dataset(opts.dataroot, modality="t2", n_slices=opts.input_nc)
-    dataset_t = common_brats.Dataset(opts.dataroot, modality="t1", n_slices=opts.input_nc)
+    dataset_s = common_brats.Dataset(opts.dataroot, modality="t2", n_slices=opts.input_nc, valid=True)
+    dataset_t = common_brats.Dataset(opts.dataroot, modality="t1", n_slices=opts.input_nc, valid=True)
     dataloader_s = torch.utils.data.DataLoader(dataset_s, batch_size=opts.batch_size, shuffle=True, pin_memory=True, drop_last=True)
     dataloader_t = torch.utils.data.DataLoader(dataset_t, batch_size=opts.batch_size, shuffle=True, pin_memory=True, drop_last=True)
 
