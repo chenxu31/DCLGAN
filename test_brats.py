@@ -114,8 +114,8 @@ if __name__ == '__main__':
 
             st_psnr = common_metrics.psnr(test_st, test_data_t[i])
             ts_psnr = common_metrics.psnr(test_ts, test_data_s[i])
-            st_ssim = SSIM(test_st, test_data_t[i], range=2.)
-            ts_ssim = SSIM(test_ts, test_data_s[i], range=2.)
+            st_ssim = SSIM(test_st, test_data_t[i], data_range=2.)
+            ts_ssim = SSIM(test_ts, test_data_s[i], data_range=2.)
             st_mae = abs(test_st - test_data_t[i]).mean()
             ts_mae = abs(test_ts - test_data_s[i]).mean()
 
