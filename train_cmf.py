@@ -12,6 +12,7 @@ import shutil
 import numpy
 import pdb
 import skimage.io
+import platform
 
 
 if platform.system() == 'Windows':
