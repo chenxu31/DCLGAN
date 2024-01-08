@@ -34,7 +34,7 @@ from util.visualizer import save_images
 from util import html
 import util.util as util
 import torch
-
+import platform
 import sys
 import numpy
 import pdb
