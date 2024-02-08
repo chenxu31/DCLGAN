@@ -1,6 +1,6 @@
 import time
 import torch
-from options.train_options_brats import TrainOptions
+from options.train_options_cmf import TrainOptions
 from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
@@ -14,12 +14,15 @@ import pdb
 import skimage.io
 import platform
 
+
 if platform.system() == 'Windows':
-  sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
+    UTIL_DIR = r"E:\我的坚果云\sourcecode\python\util"
 else:
-  sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
+    UTIL_DIR = r"/home/chenxu/我的坚果云/sourcecode/python/util"
+
+sys.path.append(UTIL_DIR)
 import common_metrics
-import common_brats
+import common_cmf_pt as common_cmf
 
 if __name__ == '__main__':
     opts = TrainOptions().parse()   # get training options
@@ -34,13 +37,17 @@ if __name__ == '__main__':
     if not os.path.exists(opts.log_dir):
         os.makedirs(opts.log_dir)
 
-    dataset_s = common_brats.Dataset(opts.dataroot, modality="t2", n_slices=opts.input_nc, valid=True)
-    dataset_t = common_brats.Dataset(opts.dataroot, modality="t1", n_slices=opts.input_nc, valid=True)
-    dataloader_s = torch.utils.data.DataLoader(dataset_s, batch_size=opts.batch_size, shuffle=True, pin_memory=True, drop_last=True)
-    dataloader_t = torch.utils.data.DataLoader(dataset_t, batch_size=opts.batch_size, shuffle=True, pin_memory=True, drop_last=True)
+    aug_para = {}
+    if opts.aug_sigma:
+        aug_para["sigma"] = opts.aug_sigma
+        aug_para["points"] = opts.aug_points
+        aug_para["rotate"] = opts.aug_rotate
+        aug_para["zoom"] = opts.aug_zoom
 
+    data_iter = common_cmf.DataIterUnpaired(opts.dataroot, device, patch_depth=opts.input_nc,
+                                            batch_size=opts.batch_size)
     if opts.do_validation:
-        val_data_t, val_data_s = common_brats.load_test_data(opts.dataroot, "val")
+        val_data_t, val_data_s, _ = common_cmf.load_test_data(opts.dataroot)
 
     model = create_model(opts)      # create a model given opt.model and other options
     #print('The number of training images = %d' % dataset_size)
@@ -50,25 +57,23 @@ if __name__ == '__main__':
 
     best_psnr = 0
     optimize_time = 0.1
-    for it in range(opts.max_epochs):
-        for batch_id, (data_s, data_t) in enumerate(zip(dataloader_s, dataloader_t)):
-            patch_s = data_s["image"].to(device)
-            patch_t = data_t["image"].to(device)
+    for it in range(opts.max_iter):
+        patch_s, patch_t, _ = data_iter.next()
 
-            data = {
-                "A": patch_s,
-                "B": patch_t,
-                "A_paths": "",
-            }
-            if it == 0 and batch_id == 0:
-                model.data_dependent_initialize(data)
-                model.setup(opts)  # regular setup: load and print networks; create schedulers
-                model.parallelize()
+        data = {
+            "A": patch_s,
+            "B": patch_t,
+            "A_paths": "",
+        }
+        if it == 0:
+            model.data_dependent_initialize(data)
+            model.setup(opts)  # regular setup: load and print networks; create schedulers
+            model.parallelize()
 
-            model.set_input(data)  # unpack data from dataset and apply preprocessing
-            model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
-            if len(opts.gpu_ids) > 0:
-                torch.cuda.synchronize()
+        model.set_input(data)  # unpack data from dataset and apply preprocessing
+        model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
+        if len(opts.gpu_ids) > 0:
+            torch.cuda.synchronize()
 
         if it % opts.display_freq == 0 and opts.do_validation:   # display images on visdom and save images to a HTML file
             msg = "Iter: %d" % (it + 1)
@@ -115,7 +120,7 @@ if __name__ == '__main__':
                    (val_st_psnr.mean(), val_st_psnr.std(), val_ts_psnr.mean(), val_ts_psnr.std())
             gen_images_test = numpy.concatenate([val_data_s[0], val_st_list[0], val_ts_list[0], val_data_t[0]], 2)
             gen_images_test = numpy.expand_dims(gen_images_test, 0).astype(numpy.float32)
-            gen_images_test = common_brats.generate_display_image(gen_images_test, is_seg=False)
+            gen_images_test = common_cmf.generate_display_image(gen_images_test, is_seg=False)
 
             if opts.log_dir:
                 try:

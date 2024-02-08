@@ -34,20 +34,21 @@ from util.visualizer import save_images
 from util import html
 import util.util as util
 import torch
-
+import platform
 import sys
 import numpy
 import pdb
 import skimage.io
 from skimage.metrics import structural_similarity as SSIM
-import platform
 
 if platform.system() == 'Windows':
-  sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
+    UTIL_DIR = r"E:\我的坚果云\sourcecode\python\util"
 else:
-  sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
+    UTIL_DIR = r"/home/chenxu/我的坚果云/sourcecode/python/util"
+
+sys.path.append(UTIL_DIR)
 import common_metrics
-import common_brats
+import common_cmf_pt as common_cmf
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
@@ -65,19 +66,19 @@ if __name__ == '__main__':
     if opt.results_dir and not os.path.exists(opt.results_dir):
         os.makedirs(opt.results_dir)
 
-    test_data_t, test_data_s = common_brats.load_test_data(opt.dataroot, "test")
+    test_data_t, test_data_s, _ = common_cmf.load_test_data(opt.dataroot)
 
     model = create_model(opt)
 
-    test_st_psnr = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
-    test_ts_psnr = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
-    test_st_ssim = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
-    test_ts_ssim = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
-    test_st_mae = numpy.zeros((test_data_s.shape[0], 1), numpy.float32)
-    test_ts_mae = numpy.zeros((test_data_t.shape[0], 1), numpy.float32)
+    test_st_psnr = numpy.zeros((len(test_data_s), 1), numpy.float32)
+    test_ts_psnr = numpy.zeros((len(test_data_t), 1), numpy.float32)
+    test_st_ssim = numpy.zeros((len(test_data_s), 1), numpy.float32)
+    test_ts_ssim = numpy.zeros((len(test_data_t), 1), numpy.float32)
+    test_st_mae = numpy.zeros((len(test_data_s), 1), numpy.float32)
+    test_ts_mae = numpy.zeros((len(test_data_t), 1), numpy.float32)
     test_st_list = []
     test_ts_list = []
-    with torch.no_grad():
+    with (torch.no_grad()):
         for i in range(len(test_data_s)):
             test_st = numpy.zeros(test_data_s[i].shape, numpy.float32)
             test_ts = numpy.zeros(test_data_t[i].shape, numpy.float32)
@@ -110,14 +111,14 @@ if __name__ == '__main__':
             test_ts /= used
 
             if opt.results_dir:
-                common_brats.save_nii(test_ts, os.path.join(opt.results_dir, "syn_%d.nii.gz" % i))
+                common_cmf.save_nii(test_ts, os.path.join(opt.results_dir, "syn_%d.nii.gz" % i))
 
             st_psnr = common_metrics.psnr(test_st, test_data_t[i])
             ts_psnr = common_metrics.psnr(test_ts, test_data_s[i])
             st_ssim = SSIM(test_st, test_data_t[i], data_range=2.)
             ts_ssim = SSIM(test_ts, test_data_s[i], data_range=2.)
-            st_mae = abs(test_st - test_data_t[i]).mean()
-            ts_mae = abs(test_ts - test_data_s[i]).mean()
+            st_mae = abs(common_cmf.restore_hu(test_st) - common_cmf.restore_hu(test_data_t[i])).mean()
+            ts_mae = abs(common_cmf.restore_hu(test_ts) - common_cmf.restore_hu(test_data_s[i])).mean()
 
             test_st_psnr[i] = st_psnr
             test_ts_psnr[i] = ts_psnr
@@ -128,9 +129,10 @@ if __name__ == '__main__':
             test_st_list.append(test_st)
             test_ts_list.append(test_ts)
 
-    msg = "test_st_psnr:%f/%f  test_st_ssim:%f/%f  test_st_mae:%f/%f  test_ts_psnr:%f/%f  test_ts_ssim:%f/%f  test_ts_mae:%f/%f" % \
-          (test_st_psnr.mean(), test_st_psnr.std(), test_st_ssim.mean(), test_st_ssim.std(), test_st_mae.mean(), test_st_mae.std(),
-           test_ts_psnr.mean(), test_ts_psnr.std(), test_ts_ssim.mean(), test_ts_ssim.std(), test_ts_mae.mean(), test_ts_mae.std())
+    msg = "test_st_psnr:%f/%f  test_ts_psnr:%f/%f  test_st_ssim:%f/%f  test_ts_ssim:%f/%f  test_st_mae:%f/%f  test_ts_mae:%f/%f" % \
+          (test_st_psnr.mean(), test_st_psnr.std(), test_ts_psnr.mean(), test_ts_psnr.std(),
+           test_st_ssim.mean(), test_st_ssim.std(), test_ts_ssim.mean(), test_ts_ssim.std(),
+           test_st_mae.mean(), test_st_mae.std(), test_ts_mae.mean(), test_ts_mae.std())
     print(msg)
 
     if opt.results_dir:
