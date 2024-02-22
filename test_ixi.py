@@ -65,7 +65,7 @@ if __name__ == '__main__':
     if opt.results_dir and not os.path.exists(opt.results_dir):
         os.makedirs(opt.results_dir)
 
-    test_data_t, test_data_s = common_ixi.load_test_data(opt.dataroot, "test")
+    test_data_s, test_data_t = common_ixi.load_test_data(opt.dataroot, "test")
 
     model = create_model(opt)
 
