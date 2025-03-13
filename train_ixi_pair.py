@@ -66,11 +66,6 @@ if __name__ == '__main__':
             patch_s = data_s["image"].to(device)
             patch_t = data_t["image"].to(device)
 
-            if it == 0 and batch_id < 10:
-                display_patch = numpy.concatenate([data_s["image"].numpy(), data_t["image"].numpy()], 3)
-                display_patch = common_ixi.generate_display_image(display_patch, is_seg=False)
-                skimage.io.imsave(os.path.join(opts.log_dir, "patch_%d.jpg" % batch_id), display_patch)
-
             data = {
                 "A": patch_s,
                 "B": patch_t,
@@ -124,8 +119,8 @@ if __name__ == '__main__':
                     ts_psnr = common_metrics.psnr(val_ts, val_data_s[i])
                     st_ssim = SSIM(val_st, val_data_t[i], data_range=2.)
                     ts_ssim = SSIM(val_ts, val_data_s[i], data_range=2.)
-                    st_mae = abs(common_pelvic.restore_hu(val_st) - common_pelvic.restore_hu(val_data_t[i])).mean()
-                    ts_mae = abs(common_pelvic.restore_hu(val_ts) - common_pelvic.restore_hu(val_data_s[i])).mean()
+                    st_mae = abs(val_st - val_data_t[i]).mean()
+                    ts_mae = abs(val_ts - val_data_s[i]).mean()
 
                     val_st_psnr[i] = st_psnr
                     val_ts_psnr[i] = ts_psnr
@@ -151,10 +146,11 @@ if __name__ == '__main__':
             gen_images_test = common_ixi.generate_display_image(gen_images_test, is_seg=False)
 
             if opts.log_dir:
-                try:
-                    skimage.io.imsave(os.path.join(opts.log_dir, "gen_images_test.jpg"), gen_images_test)
-                except:
-                    pass
+                skimage.io.imsave(os.path.join(opts.log_dir, "gen_images_test.jpg"), gen_images_test)
+                if it >= opts.max_epochs - 10:
+                    numpy.save(os.path.join(opts.log_dir, "ts_psnr_%s.npy" % it), val_ts_psnr)
+                    numpy.save(os.path.join(opts.log_dir, "ts_ssim_%s.npy" % it), val_ts_ssim)
+                    numpy.save(os.path.join(opts.log_dir, "ts_mae_%s.npy" % it), val_ts_mae)
 
             print(msg)
 

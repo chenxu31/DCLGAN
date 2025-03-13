@@ -65,11 +65,6 @@ if __name__ == '__main__':
             patch_s = data_s["image"].to(device)
             patch_t = data_t["image"].to(device)
 
-            if it == 0 and batch_id < 10:
-                display_patch = numpy.concatenate([data_s["image"].numpy(), data_t["image"].numpy()], 3)
-                display_patch = common_pelvic.generate_display_image(display_patch, is_seg=False)
-                skimage.io.imsave(os.path.join(opts.log_dir, "patch_%d.jpg" % batch_id), display_patch)
-
             data = {
                 "A": patch_s,
                 "B": patch_t,
@@ -97,8 +92,6 @@ if __name__ == '__main__':
             val_ts_ssim = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
             val_st_mae = numpy.zeros((val_data_s.shape[0], ), numpy.float32)
             val_ts_mae = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
-            val_st_list = []
-            val_ts_list = []
             with torch.no_grad():
                 for i in range(val_data_s.shape[0]):
                     val_st = numpy.zeros(val_data_s.shape[1:], numpy.float32)
@@ -132,8 +125,6 @@ if __name__ == '__main__':
                     val_ts_ssim[i] = ts_ssim
                     val_st_mae[i] = st_mae
                     val_ts_mae[i] = ts_mae
-                    val_st_list.append(val_st)
-                    val_ts_list.append(val_ts)
 
             model.netG_A.train()
             model.netG_B.train()
@@ -150,10 +141,11 @@ if __name__ == '__main__':
             gen_images_test = common_pelvic.generate_display_image(gen_images_test, is_seg=False)
 
             if opts.log_dir:
-                try:
-                    skimage.io.imsave(os.path.join(opts.log_dir, "gen_images_test.jpg"), gen_images_test)
-                except:
-                    pass
+                skimage.io.imsave(os.path.join(opts.log_dir, "gen_images_test.jpg"), gen_images_test)
+                if it >= opts.max_epochs - 10:
+                    numpy.save(os.path.join(opts.log_dir, "ts_psnr_%s.npy" % it), val_ts_psnr)
+                    numpy.save(os.path.join(opts.log_dir, "ts_ssim_%s.npy" % it), val_ts_ssim)
+                    numpy.save(os.path.join(opts.log_dir, "ts_mae_%s.npy" % it), val_ts_mae)
 
             model.update_learning_rate()
 
