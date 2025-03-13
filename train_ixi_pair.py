@@ -122,8 +122,8 @@ if __name__ == '__main__':
 
                     st_psnr = common_metrics.psnr(val_st, val_data_t[i])
                     ts_psnr = common_metrics.psnr(val_ts, val_data_s[i])
-                    st_ssim = SSIM(val_st, val_data_t[i])
-                    ts_ssim = SSIM(val_ts, val_data_s[i])
+                    st_ssim = SSIM(val_st, val_data_t[i], data_range=2.)
+                    ts_ssim = SSIM(val_ts, val_data_s[i], data_range=2.)
                     st_mae = abs(common_pelvic.restore_hu(val_st) - common_pelvic.restore_hu(val_data_t[i])).mean()
                     ts_mae = abs(common_pelvic.restore_hu(val_ts) - common_pelvic.restore_hu(val_data_s[i])).mean()
 
