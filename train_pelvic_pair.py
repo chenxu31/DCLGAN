@@ -102,6 +102,8 @@ if __name__ == '__main__':
             val_ts_mae = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
             val_st_gmsd = numpy.zeros((val_data_s.shape[0], ), numpy.float32)
             val_ts_gmsd = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
+            val_st_list = []
+            val_ts_list = []
             with torch.no_grad():
                 for i in range(val_data_s.shape[0]):
                     val_st = numpy.zeros(val_data_s.shape[1:], numpy.float32)
@@ -121,6 +123,9 @@ if __name__ == '__main__':
                     assert used.min() > 0
                     val_st /= used
                     val_ts /= used
+
+                    val_st_list.append(val_st)
+                    val_ts_list.append(val_ts)
 
                     st_psnr = common_metrics.psnr(val_st, val_data_t[i])
                     ts_psnr = common_metrics.psnr(val_ts, val_data_s[i])
