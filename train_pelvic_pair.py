@@ -40,11 +40,19 @@ if __name__ == '__main__':
     dataset_s = common_pelvic.Dataset(opts.dataroot, modality="ct", phase="val", n_slices=opts.input_nc)
     dataset_t = common_pelvic.Dataset(opts.dataroot, modality="cbct", phase="val", n_slices=opts.input_nc)
 
-    seed = random.randint(0, 1000000)
-    gen1 = torch.Generator()
-    gen2 = torch.Generator()
-    gen1.manual_seed(seed)
-    gen2.manual_seed(seed)
+    if opts.random:
+        seed = random.randint(0, 1000000)
+        gen1 = torch.Generator()
+        gen1.manual_seed(seed)
+        seed = random.randint(0, 1000000)
+        gen2 = torch.Generator()
+        gen2.manual_seed(seed)
+    else:
+        seed = random.randint(0, 1000000)
+        gen1 = torch.Generator()
+        gen2 = torch.Generator()
+        gen1.manual_seed(seed)
+        gen2.manual_seed(seed)
 
     dataloader_s = torch.utils.data.DataLoader(dataset_s, batch_size=opts.batch_size, shuffle=True, pin_memory=True,
                                                drop_last=True, num_workers=NUM_WORKERS, generator=gen1)
@@ -92,6 +100,8 @@ if __name__ == '__main__':
             val_ts_ssim = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
             val_st_mae = numpy.zeros((val_data_s.shape[0], ), numpy.float32)
             val_ts_mae = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
+            val_st_gmsd = numpy.zeros((val_data_s.shape[0], ), numpy.float32)
+            val_ts_gmsd = numpy.zeros((val_data_t.shape[0], ), numpy.float32)
             with torch.no_grad():
                 for i in range(val_data_s.shape[0]):
                     val_st = numpy.zeros(val_data_s.shape[1:], numpy.float32)
@@ -118,6 +128,8 @@ if __name__ == '__main__':
                     ts_ssim = SSIM(val_ts, val_data_s[i], data_range=2.)
                     st_mae = abs(common_pelvic.restore_hu(val_st) - common_pelvic.restore_hu(val_data_t[i])).mean()
                     ts_mae = abs(common_pelvic.restore_hu(val_ts) - common_pelvic.restore_hu(val_data_s[i])).mean()
+                    st_gmsd = common_metrics.GMSD_3D(val_st, val_data_t[i])
+                    ts_gmsd = common_metrics.GMSD_3D(val_ts, val_data_s[i])
 
                     val_st_psnr[i] = st_psnr
                     val_ts_psnr[i] = ts_psnr
@@ -125,17 +137,18 @@ if __name__ == '__main__':
                     val_ts_ssim[i] = ts_ssim
                     val_st_mae[i] = st_mae
                     val_ts_mae[i] = ts_mae
+                    val_st_gmsd[i] = st_gmsd
+                    val_ts_gmsd[i] = ts_gmsd
 
             model.netG_A.train()
             model.netG_B.train()
 
-            msg += "  val_st_psnr:%f/%f  val_st_ssim:%f/%f  val_st_mae:%f/%f  val_ts_psnr:%f/%f  val_ts_ssim:%f/%f  val_ts_mae:%f/%f" % \
-                   (val_st_psnr.mean(), val_st_psnr.std(),
-                    val_st_ssim.mean(), val_st_ssim.std(),
-                    val_st_mae.mean(), val_st_mae.std(),
-                    val_ts_psnr.mean(), val_ts_psnr.std(),
-                    val_ts_ssim.mean(), val_ts_ssim.std(),
-                    val_ts_mae.mean(), val_ts_mae.std())
+            msg += ("  val_st_psnr:%f/%f  val_st_ssim:%f/%f  val_st_mae:%f/%f  val_st_gmsd:%f/%f"
+                    "  val_ts_psnr:%f/%f  val_ts_ssim:%f/%f  val_ts_mae:%f/%f  val_ts_gmsd:%f/%f") % \
+                   (val_st_psnr.mean(), val_st_psnr.std(), val_st_ssim.mean(), val_st_ssim.std(),
+                    val_st_mae.mean(), val_st_mae.std(), val_st_gmsd.mean(), val_st_gmsd.std(),
+                    val_ts_psnr.mean(), val_ts_psnr.std(), val_ts_ssim.mean(), val_ts_ssim.std(),
+                    val_ts_mae.mean(), val_ts_mae.std(), val_ts_gmsd.mean(), val_ts_gmsd.std())
             gen_images_test = numpy.concatenate([val_data_s[0], val_st_list[0], val_ts_list[0], val_data_t[0]], 2)
             gen_images_test = numpy.expand_dims(gen_images_test, 0).astype(numpy.float32)
             gen_images_test = common_pelvic.generate_display_image(gen_images_test, is_seg=False)
@@ -146,7 +159,9 @@ if __name__ == '__main__':
                     numpy.save(os.path.join(opts.log_dir, "ts_psnr_%s.npy" % it), val_ts_psnr)
                     numpy.save(os.path.join(opts.log_dir, "ts_ssim_%s.npy" % it), val_ts_ssim)
                     numpy.save(os.path.join(opts.log_dir, "ts_mae_%s.npy" % it), val_ts_mae)
+                    numpy.save(os.path.join(opts.log_dir, "ts_gmsd_%s.npy" % it), val_ts_gmsd)
 
+            print(msg)
             model.update_learning_rate()
 
     model.save_networks("final")
