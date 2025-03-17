@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
             if opts.log_dir:
                 skimage.io.imsave(os.path.join(opts.log_dir, "gen_images_test.jpg"), gen_images_test)
-                if it >= opts.max_epochs - 10:
+                if it >= opts.max_epochs - 20:
                     numpy.save(os.path.join(opts.log_dir, "ts_psnr_%s.npy" % it), val_ts_psnr)
                     numpy.save(os.path.join(opts.log_dir, "ts_ssim_%s.npy" % it), val_ts_ssim)
                     numpy.save(os.path.join(opts.log_dir, "ts_mae_%s.npy" % it), val_ts_mae)
