@@ -34,14 +34,20 @@ from util.visualizer import save_images
 from util import html
 import util.util as util
 import torch
-
+import time
 import sys
 import numpy
 import pdb
 import skimage.io
+import platform
 from skimage.metrics import structural_similarity as SSIM
 
-sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
+if platform.system() == 'Windows':
+    UTIL_DIR = r"E:\我的坚果云\sourcecode\python\util"
+else:
+    UTIL_DIR = r"/home/chenxu/我的坚果云/sourcecode/python/util"
+
+sys.path.append(UTIL_DIR)
 import common_metrics
 import common_pelvic_pt as common_pelvic
 
@@ -72,6 +78,7 @@ if __name__ == '__main__':
     test_ts_ssim = numpy.zeros((len(test_data_t), 1), numpy.float32)
     test_st_mae = numpy.zeros((len(test_data_s), 1), numpy.float32)
     test_ts_mae = numpy.zeros((len(test_data_t), 1), numpy.float32)
+    test_times = numpy.zeros((len(test_data_t),), numpy.float32)
     test_st_list = []
     test_ts_list = []
     with torch.no_grad():
@@ -79,6 +86,7 @@ if __name__ == '__main__':
             test_st = numpy.zeros(test_data_s[i].shape, numpy.float32)
             test_ts = numpy.zeros(test_data_t[i].shape, numpy.float32)
             used = numpy.zeros(test_data_s[i].shape, numpy.float32)
+            start_time = time.time()
             for j in range(test_data_s[i].shape[0] - opt.input_nc + 1):
                 test_patch_s = torch.tensor(numpy.expand_dims(test_data_s[i][j:j + opt.input_nc, :, :], 0), device=device)
                 test_patch_t = torch.tensor(numpy.expand_dims(test_data_t[i][j:j + opt.input_nc, :, :], 0), device=device)
@@ -101,6 +109,7 @@ if __name__ == '__main__':
                 test_st[j:j + opt.input_nc, :, :] += ret_st.cpu().detach().numpy()[0]
                 test_ts[j:j + opt.input_nc, :, :] += ret_ts.cpu().detach().numpy()[0]
                 used[j:j + opt.input_nc, :, :] += 1
+            test_times[i] = time.time() - start_time
 
             assert used.min() > 0
             test_st /= used
@@ -113,8 +122,8 @@ if __name__ == '__main__':
 
             st_psnr = common_metrics.psnr(test_st, test_data_t[i])
             ts_psnr = common_metrics.psnr(test_ts, test_data_s[i])
-            st_ssim = SSIM(test_st, test_data_t[i])
-            ts_ssim = SSIM(test_ts, test_data_s[i])
+            st_ssim = SSIM(test_st, test_data_t[i], data_range=2.)
+            ts_ssim = SSIM(test_ts, test_data_s[i], data_range=2.)
             st_mae = abs(common_pelvic.restore_hu(test_st) - common_pelvic.restore_hu(test_data_t[i])).mean()
             ts_mae = abs(common_pelvic.restore_hu(test_ts) - common_pelvic.restore_hu(test_data_s[i])).mean()
 
@@ -127,6 +136,7 @@ if __name__ == '__main__':
             test_st_list.append(test_st)
             test_ts_list.append(test_ts)
 
+    print("test_time:%f/%f" % (test_times.mean(), test_times.std()))####----
     msg = "test_st_psnr:%f/%f  test_ts_psnr:%f/%f  test_st_ssim:%f/%f  test_ts_ssim:%f/%f  test_st_mae:%f/%f  test_ts_mae:%f/%f" % \
           (test_st_psnr.mean(), test_st_psnr.std(), test_ts_psnr.mean(), test_ts_psnr.std(),
            test_st_ssim.mean(), test_st_ssim.std(), test_ts_ssim.mean(), test_ts_ssim.std(),
